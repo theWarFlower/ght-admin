@@ -1,7 +1,7 @@
 import { useMediaQuery, Theme } from "@mui/material";
-import { List, SimpleList, Datagrid, TextField, EmailField } from "react-admin";
+import { List, SimpleList, Datagrid, TextField, EmailField, RichTextField } from "react-admin";
 
-export const PostList = () => {
+export const ListPosts = () => {
     const isSmall = useMediaQuery<Theme>((theme) => theme.breakpoints.down("sm"));
     return (
         <List>
@@ -12,7 +12,7 @@ export const PostList = () => {
                     tertiaryText={(record) => record.description}
                 />      
             ) : (
-                <Datagrid rowClick="edit">
+                <Datagrid rowClick="show">
                     <TextField source="id" />
                     <TextField source="name" />
                     <EmailField source="email" />
@@ -21,7 +21,7 @@ export const PostList = () => {
                     <TextField source="remarks" />
                     <TextField source="location" />
                     <TextField source="support_type" />
-                    <TextField source="status" />
+                    <RichTextField source="status" />
                     <TextField source="created_at" />
                 </Datagrid>
             )}

@@ -5,19 +5,19 @@ import {
   ShowGuesser,
 } from "react-admin";
 import { dataProvider } from "./dataProvider";
-import { PostList } from "./posts";
-
+import { ListPosts } from "./components/listPosts";
+import { ShowPosts } from "./components/showPosts";
 export const App = () => (
   <Admin dataProvider={dataProvider}>
     <Resource
       name="posts"
-      list={PostList}
+      list={ListPosts}
       edit={EditGuesser}
-      show={ShowGuesser}
+      show={ShowPosts}
     />
     <Resource
       name="customers"
-      list={PostList}
+      list={ListPosts}
       />
   </Admin>
 );
