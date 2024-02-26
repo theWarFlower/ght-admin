@@ -24,6 +24,8 @@ import {
     useRecordContext
 } from "react-admin";
 import { DateField } from "./DateField";
+import { DescriptionField } from "./DescriptionField";
+import { CommentsField } from "./CommentsField";
 
 const RequestTitle = () => {
     const record = useRecordContext();
@@ -31,18 +33,25 @@ const RequestTitle = () => {
 };
 
 const requestFilters = [
-    <RadioButtonGroupInput source="location" label="Location" alwaysOn choices={[
+    <TextInput source="q" label="Search" alwaysOn />,
+    <CheckboxGroupInput source="status" label="Status" alwaysOn choices={[
+        { id: '<b>NEW REQUEST</b>', name: 'NEW REQUEST' },
+        { id: '<b>PROPOSAL REQUIRED</b>', name: 'PROPOSAL REQUIRED' },
+        { id: '<b>FOLLOW UP REQUIRED</b>', name: 'FOLLOW UP REQUIRED' },
+        { id: '<b>SCHEDULED</b>', name: 'SCHEDULED' },
+        { id: '<b>COMPLETED</b>', name: 'COMPLETED' },
+    ]} />,
+    <CheckboxGroupInput source="location" label="Location" alwaysOn choices={[
         { id: "Atlanta", name: "Atlanta" },
         { id: "Birmingham", name: "Birmingham" },
         { id: "30A", name: "30A" },
     ]}/>,
-    <TextInput source="q" label="Search" alwaysOn />,
 ];
 
 export const ListRequests = () => {
     const isSmall = useMediaQuery<Theme>((theme) => theme.breakpoints.down("sm"));
     return (
-        <List filters={requestFilters} title={"GHT Service Dashboard"}>
+        <List perPage={25} filters={requestFilters} title={"GHT Service Dashboard"}>
             {isSmall ? (
                 <SimpleList
                     primaryText={(record) => record.name}
@@ -52,14 +61,14 @@ export const ListRequests = () => {
             ) : (
                 <Datagrid rowClick="show" bulkActionButtons={false} sx={{
                     '& .RaDatagrid-rowOdd': {
-                        backgroundColor: '#fee',
+                        backgroundColor: '#eef',
                     },
                 }}>
                     <TextField source="name" />
                     <EmailField source="email" />
                     <NumberField source="mobile"/>
-                    <TextField source="description" />
-                    <TextField source="remarks" label="Comments" />
+                    <DescriptionField />
+                    <CommentsField label="Comments" />
                     <TextField source="location" />
                     <TextField source="support_type" />
                     <RichTextField source="status" />

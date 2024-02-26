@@ -882,5 +882,13 @@
       "action": "<button type=\"button\" data-id=\"143\" onclick=\"updateStatus(this)\" data-remarks=\"\" data-status=\"SCHEDULED\" class=\"edit btn btn-primary btn-sm updateStatus\">Update</button>",
       "DT_RowIndex": 63
     }
+  ],
+  "comments" [
+    {
+      "comment_id": 1,
+      "user_id": "Shane Smith (kenny)",
+      "body" : "wall of text",
+      "created_at": "02/22/2024 02:23 PM",
+    }
   ]
 }
