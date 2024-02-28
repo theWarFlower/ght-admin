@@ -1,14 +1,17 @@
 import { Dashboard, ViewListRounded } from '@mui/icons-material/';
-
-import { Box } from "@mui/material";
+import { Box } from '@mui/material';
 import {
   Admin,
   RefreshIconButton,
+  CustomRoutes,
   Resource,
   Layout,
-} from "react-admin";
-import { dataProvider } from "./dataProvider";
-import { ListRequests, ShowRequests, EditRequests, CreateRequests } from "./requests/Requests";
+} from 'react-admin';
+import { BrowserRouter, Route } from 'react-router-dom';
+import { dataProvider } from './dataProvider';
+import { authProvider } from './authProvider';
+import { ListRequests, ShowRequests, EditRequests, CreateRequests } from './requests/Requests';
+import { ForgotPasswordPage, LoginPage, SetPasswordPage } from 'ra-supabase';
 
 const MyLayout = (props: any) => (
   <>
@@ -26,18 +29,32 @@ const MyLayout = (props: any) => (
 );
 
 export const App = () => (
-  <Admin 
-    dataProvider={dataProvider}
-    title="GHT Service Dashboard"
-    layout={MyLayout}
-  >
-  <Resource
-    name="requests"
-    list={ListRequests}
-    create={CreateRequests}
-    edit={EditRequests}
-    show={ShowRequests}
-    icon={ViewListRounded}
-    />
-  </Admin>
+  <BrowserRouter>
+    <Admin 
+      dataProvider={dataProvider}
+      authProvider={authProvider}
+      title="GHT Service Dashboard"
+      layout={MyLayout}
+      loginPage={LoginPage}
+      >
+      <CustomRoutes noLayout>
+        <Route
+          path={SetPasswordPage.path}
+          element={<SetPasswordPage />}
+          />
+        <Route
+          path={ForgotPasswordPage.path}
+          element={<ForgotPasswordPage />}
+          />  
+        </CustomRoutes>
+      <Resource
+        name="requests"
+        list={ListRequests}
+        create={CreateRequests}
+        edit={EditRequests}
+        show={ShowRequests}
+        icon={ViewListRounded}
+        />
+    </Admin>
+  </BrowserRouter>
 );
