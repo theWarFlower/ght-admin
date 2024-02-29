@@ -48,12 +48,13 @@ export const App = () => (
           />  
         </CustomRoutes>
       <Resource
-        name="requests"
+        name="ingest_table"
         list={ListRequests}
         create={CreateRequests}
         edit={EditRequests}
         show={ShowRequests}
         icon={ViewListRounded}
+        options={{ label: 'Support Requests' }}
         />
     </Admin>
   </BrowserRouter>

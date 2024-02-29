@@ -7,12 +7,12 @@ export const DescriptionField = (_props: { label: string }) => (
     overflow="hidden"
     textOverflow="ellipsis"
     whiteSpace="nowrap"
-    maxWidth={{ xl: "700px", lg: "450px", md: "300px" }}
+    maxWidth={{ xl: "450px", lg: "300px", md: "150px" }}
   >
     <TextField source="description" />
   </Box>
 );
 
 DescriptionField.defaultProps = {
-  label: "Subject",
+  label: "Description",
 };

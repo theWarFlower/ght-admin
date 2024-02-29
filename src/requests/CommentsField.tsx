@@ -7,12 +7,12 @@ export const CommentsField = (_props: { label: string }) => (
     overflow="hidden"
     textOverflow="ellipsis"
     whiteSpace="nowrap"
-    maxWidth={{ xl: "300px", lg: "200px", md: "100px" }}
+    maxWidth={{ xl: "200px", lg: "150px", md: "100px" }}
   >
     <TextField source="remarks" />
   </Box>
 );
 
 CommentsField.defaultProps = {
-  label: "Subject",
+  label: "Comments",
 };
