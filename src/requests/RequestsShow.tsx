@@ -3,7 +3,8 @@ import {
     SimpleShowLayout,
     TextField,
     EmailField,
-    useRecordContext
+    useRecordContext,
+    RecordContextProvider
 } from 'react-admin';
 
 import { RequestAside } from './RequestAside'
@@ -21,8 +22,7 @@ export const ShowRequests = () => (
             <TextField source="mobile" label="Phone" />
             <TextField source="description" />
             <TextField source="remarks" label="Comments"/>
-            
+            <button>New Comment</button>
         </SimpleShowLayout>
     </Show>
 );
-
