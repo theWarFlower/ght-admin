@@ -6,12 +6,12 @@ import {
     CheckboxGroupInput,
     TextField,
     EmailField,
-    DateField
 } from 'react-admin';
 
 import { useMediaQuery, Theme } from "@mui/material";
 import { DescriptionField } from "../components/DescriptionField";
 import { StatusField } from '../components/StatusField';
+import { DateField } from 'react-admin';
 
 export const requestFilters = [
     <RadioButtonGroupInput source="status" label="Status" alwaysOn choices={[
