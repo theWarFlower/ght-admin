@@ -1,0 +1,116 @@
+CREATE TABLE Roles (
+    role_id SERIAL PRIMARY KEY,
+    role_name VARCHAR(20) UNIQUE NOT NULL
+);
+
+INSERT INTO Roles (role_name) VALUES
+    ('Client'), 
+    ('Agent'),
+    ('Admin');
+
+CREATE TABLE Users (
+    user_id SERIAL PRIMARY KEY,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    role_id INT REFERENCES Roles(role_id) NOT NULL,
+    password VARCHAR(255) NOT NULL, -- Store hashed passwords
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE Customers (
+    customer_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20),
+    user_id INT REFERENCES Users(user_id)
+);
+
+CREATE TABLE Employees (
+    employee_id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name  VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    user_id INT REFERENCES Users(user_id)
+);
+
+CREATE TABLE Locations (
+    location_id SERIAL PRIMARY KEY,
+    location_name VARCHAR(20) UNIQUE NOT NULL
+);
+
+INSERT INTO Locations (location_name) VALUES 
+    ('Atlanta'), 
+    ('Birmingham'), 
+    ('30A');
+
+
+CREATE TABLE Request_Type (
+    type_id SERIAL PRIMARY KEY,
+    type_name VARCHAR(50) UNIQUE NOT NULL
+);
+
+INSERT INTO Request_Type (type_name) VALUES
+    ('A/V Automation'), 
+    ('Electrical'), 
+    ('Lighting Control'), 
+    ('Network/Wi-Fi'), 
+    ('Security'), 
+    ('Other');
+
+CREATE TABLE Request_Status (
+    status_id SERIAL PRIMARY KEY,
+    status_name VARCHAR(50) UNIQUE NOT NULL,
+    description TEXT NOT NULL
+);
+
+INSERT INTO Request_Status (status_name, description) VALUES
+    ('NEW REQUEST', 'The ticket is open and awaiting handling'),
+    ('SCHEDULED', 'The ticket is scheduled and awaiting resolution'),
+    ('PROPOSAL REQUIRED', 'A proposal from sales is required to progress this ticket'),
+    ('FOLLOW UP REQUIRED', 'Ticket was unable to be resolved and requires more attention'),
+    ('COMPLETED', 'The ticket has been resolved or closed');
+
+CREATE TABLE Requests (
+    request_id SERIAL PRIMARY KEY,
+    customer_id INT REFERENCES Customers(customer_id) NULL,
+    employee_id INT REFERENCES Employees(employee_id) NULL,
+    description TEXT NOT NULL,
+    status_id INT REFERENCES Request_Status(status_id) DEFAULT 1,
+    type INT REFERENCES Request_Type(type_id) DEFAULT NULL,
+    location INT REFERENCES Locations(location_id), 
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT chk_ticket_creator CHECK (
+        (customer_id IS NOT NULL AND employee_id IS NULL) OR
+        (customer_id IS NULL AND employee_id IS NOT NULL)
+    )
+);
+
+CREATE TABLE Request_Comments (
+    comment_id SERIAL PRIMARY KEY,
+    request_id INT REFERENCES Requests(request_id),
+    employee_id INT REFERENCES Employees(employee_id),
+    comment_text TEXT NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Enable RLS (row-level security) and policies will be defined as per user roles and access requirements
+ALTER TABLE Customers ENABLE ROW LEVEL SECURITY;
+ALTER TABLE Requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE Request_Comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY select_customers ON Customers FOR SELECT
+USING (UserID = current_user_id());
+
+CREATE POLICY select_tickets ON Tickets FOR SELECT
+USING (CustomerID = current_customer_id());
+
+CREATE POLICY select_all_tickets ON Tickets FOR SELECT
+USING (TRUE);
+
+CREATE POLICY select_employee ON Employee FOR SELECT
+USING (UserID = current_user_id());
+
+CREATE POLICY select_all_comments ON TicketComments FOR SELECT
+USING (TRUE);
