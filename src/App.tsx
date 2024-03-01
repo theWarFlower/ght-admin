@@ -1,4 +1,4 @@
-import { Dashboard, ViewListRounded } from '@mui/icons-material/';
+import { Dashboard } from '@mui/icons-material/';
 import { Box } from '@mui/material';
 import {
   Admin,
@@ -10,7 +10,7 @@ import {
 import { BrowserRouter, Route } from 'react-router-dom';
 import { dataProvider } from './dataProvider';
 import { authProvider } from './authProvider';
-import { ListRequests, ShowRequests, EditRequests, CreateRequests } from './requests/Requests';
+import requests from './requests';
 import { ForgotPasswordPage, LoginPage, SetPasswordPage } from 'ra-supabase';
 
 const MyLayout = (props: any) => (
@@ -49,12 +49,8 @@ export const App = () => (
         </CustomRoutes>
       <Resource
         name="ingest_table"
-        list={ListRequests}
-        create={CreateRequests}
-        edit={EditRequests}
-        show={ShowRequests}
-        icon={ViewListRounded}
         options={{ label: 'Support Requests' }}
+        {...requests}
         />
     </Admin>
   </BrowserRouter>
