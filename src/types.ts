@@ -1,5 +1,49 @@
-import { RaRecord } from "react-admin";
+import { Identifier, RaRecord } from "react-admin";
 
+export interface Project extends RaRecord {
+  id: number;
+  sales_order: number;
+  customer_id: Identifier;
+  agent_id: Identifier;
+  description: string;
+  stage_id: number;
+  status: string;
+  created_at: string;
+  updated_at: string;
+  
+}
+
+export interface Comment extends RaRecord {
+  id: number;
+  author: "customer" | "agent";
+  message: string;
+  request_id: Identifier;
+  customer_id: Identifier;
+  agent_id: Identifier;
+  created_at: string;
+}
+
+export interface Customer extends RaRecord {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address: string;
+  zipcode: string;
+  city: string;
+  stateAbbr: string;
+  updated_at: string;
+  comment_ids: Identifier[]
+  projects_ids: Identifier[]
+}
+
+export interface Tag extends RaRecord {
+  name: string;
+  color: string;
+}
+
+/*
 export interface Request extends RaRecord {
   id: number;
   name: string;
@@ -41,23 +85,4 @@ export const requestTypes = [
 ] as const
 
 export type RequestType = typeof requestTypes[number]
-
-export interface Message extends RaRecord {
-  id: number;
-  author: "customer" | "agent";
-  message: string;
-  ticket_id: number;
-  email: string;
-  customer_id: number;
-  agent_id: number;
-  timestamp: string;
-}
-
-export interface Customer extends RaRecord {
-  id: number;
-  firstName: string;
-  lastName: string;
-  email: string;
-  avatar: string;
-  update_at?: string;
-}
+*/

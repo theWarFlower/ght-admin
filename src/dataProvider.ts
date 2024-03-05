@@ -1,9 +1,3 @@
-/*
-import fakeRestDataProvider from "ra-data-fakerest";
-import data from "./data.json";
-
-export const dataProvider = fakeRestDataProvider(data, true);
-*/
 import { supabaseDataProvider } from 'ra-supabase';
 import { supabaseClient } from './supabase';
 
