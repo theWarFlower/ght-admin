@@ -1,5 +1,21 @@
 import { Identifier, RaRecord } from "react-admin";
 
+export interface Customer extends RaRecord {
+  id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  phone: string;
+  address1: string;
+  address2: string;
+  zipcode: string;
+  city: string;
+  state: string;
+  comment_ids: Identifier[]
+  projects_ids: Identifier[]
+}
+
+/*
 export interface Project extends RaRecord {
   id: number;
   sales_order: number;
@@ -23,27 +39,12 @@ export interface Comment extends RaRecord {
   created_at: string;
 }
 
-export interface Customer extends RaRecord {
-  id: number;
-  first_name: string;
-  last_name: string;
-  email: string;
-  phone: string;
-  address: string;
-  zipcode: string;
-  city: string;
-  stateAbbr: string;
-  updated_at: string;
-  comment_ids: Identifier[]
-  projects_ids: Identifier[]
-}
 
 export interface Tag extends RaRecord {
   name: string;
   color: string;
 }
 
-/*
 export interface Request extends RaRecord {
   id: number;
   name: string;

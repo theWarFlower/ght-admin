@@ -3,7 +3,6 @@ import {
     SimpleList,
     Datagrid,
     RadioButtonGroupInput,
-    CheckboxGroupInput,
     TextField,
     EmailField,
 } from 'react-admin';
@@ -15,16 +14,18 @@ import { DateField } from 'react-admin';
 
 export const requestFilters = [
     <RadioButtonGroupInput source="status" label="Status" alwaysOn choices={[
+        { id: '', name: 'None' },
         { id: '<b>NEW REQUEST</b>', name: 'New' },
         { id: '<b>PROPOSAL REQUIRED</b>', name: 'Needs Proposal' },
         { id: '<b>FOLLOW UP REQUIRED</b>', name: 'Follow-up' },
         { id: '<b>SCHEDULED</b>', name: 'Scheduled' },
         { id: '<b>COMPLETED</b>', name: 'Complete' },
     ]} />,
-    <CheckboxGroupInput source="location" label="Location" alwaysOn choices={[
+    <RadioButtonGroupInput source="location" label="Location" alwaysOn choices={[
         { id: "Atlanta", name: "Atlanta" },
         { id: "Birmingham", name: "Birmingham" },
         { id: "30A", name: "30A" },
+        { id: '', name: "All" },
     ]}/>,
 ];
 
@@ -35,7 +36,7 @@ export const ListRequests = () => {
             sort={{ field: "created_at", order: "DESC" }}
             perPage={25}
             filters={requestFilters}
-            title={"GHT Service Dashboard"}
+            title={"Support Requests"}
         >
             {isSmall ? (
                 <SimpleList

@@ -8,6 +8,7 @@ import { dataProvider } from './dataProvider';
 import { authProvider } from './authProvider';
 import { ForgotPasswordPage, LoginPage, SetPasswordPage } from 'ra-supabase';
 import requests from './requests';
+import customers from './customers';
 
 export const App = () => (
   <BrowserRouter>
@@ -31,6 +32,10 @@ export const App = () => (
         name="ingest_table"
         options={{ label: 'Support Requests' }}
         {...requests}
+        />
+      <Resource
+        name="customers"
+        {...customers}
         />
     </Admin>
   </BrowserRouter>

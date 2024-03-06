@@ -11,8 +11,7 @@ INSERT INTO Roles (role_name) VALUES
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
-    role_id INT REFERENCES Roles(role_id) NOT NULL,
-    password VARCHAR(255) NOT NULL, -- Store hashed passwords
+    role_id INT REFERENCES Roles(id) NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
