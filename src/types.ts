@@ -15,7 +15,6 @@ export interface Customer extends RaRecord {
   projects_ids: Identifier[]
 }
 
-/*
 export interface Project extends RaRecord {
   id: number;
   sales_order: number;
@@ -86,4 +85,3 @@ export const requestTypes = [
 ] as const
 
 export type RequestType = typeof requestTypes[number]
-*/

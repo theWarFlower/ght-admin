@@ -87,9 +87,9 @@ BEGIN
     END IF;
 
     -- Insert the request
-    INSERT INTO Requests (customer_id, description, status_id, location)
-    VALUES (new_customer_id, NEW.description, (SELECT status_id FROM Request_Status WHERE status_name = NEW.status_id LIMIT 1), (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1))
-    RETURNING request_id INTO new_request_id;
+    -- INSERT INTO Requests (customer_id, description, status_id, location)
+    -- VALUES (new_customer_id, NEW.description, (SELECT status_id FROM Request_Status WHERE status_name = NEW.status_id LIMIT 1), (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1))
+    -- RETURNING request_id INTO new_request_id;
 
     -- Insert the request type (assuming request_type contains the type_name)
     SELECT type_id INTO type_id FROM Request_Types WHERE type_name = NEW.request_type LIMIT 1;

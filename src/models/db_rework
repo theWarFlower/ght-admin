@@ -1,0 +1,21 @@
+CREATE TYPE support_request_status AS ENUM (
+  'NEW REQUEST',
+  'SCHEDULED',
+  'FOLLOW UP REQUIRED',
+  'PROPOSAL REQUIRED',
+  'COMPLETED'
+);
+
+CREATE TABLE support_requests (
+  id BIGSERIAL NOT NULL PRIMARY KEY,
+  name VARCHAR(255) DEFAULT NULL,
+  mobile VARCHAR(15) DEFAULT NULL,
+  email VARCHAR(255) DEFAULT NULL,
+  description TEXT,
+  location VARCHAR(255) DEFAULT NULL,
+  support_type VARCHAR(255) DEFAULT NULL,
+  status support_request_status DEFAULT 'NEW REQUEST',
+  created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL,
+  updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT NULL,
+  remarks TEXT
+);
