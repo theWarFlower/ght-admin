@@ -11,26 +11,12 @@ INSERT INTO Roles (role_name) VALUES
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
     email VARCHAR(100) UNIQUE NOT NULL,
-    role_id INT REFERENCES Roles(id) NOT NULL,
+    role_id INT REFERENCES Roles(role_id) NOT NULL,
     created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE Customers (
-    customer_id SERIAL PRIMARY KEY,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    auth_id UUID REFERENCES auth.users(id) UNIQUE NOT NULL,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    phone VARCHAR(20),
-    user_id INT REFERENCES Users(user_id)
-);
-
-CREATE TABLE Employees (
-    employee_id SERIAL PRIMARY KEY,
-    first_name VARCHAR(50) NOT NULL,
-    last_name  VARCHAR(50) NOT NULL,
-    email VARCHAR(100) UNIQUE NOT NULL,
-    user_id INT REFERENCES Users(user_id)
 );
 
 CREATE TABLE Locations (
@@ -43,19 +29,42 @@ INSERT INTO Locations (location_name) VALUES
     ('Birmingham'), 
     ('30A');
 
+CREATE TABLE Customers (
+    id SERIAL PRIMARY KEY,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    phone VARCHAR(20) NOT NULL,
+    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    location INT REFERENCES Locations(location_id),
+    city VARCHAR(20) NOT NULL,
+    state VARCHAR(2) NOT NULL,
+    zipcode VARCHAR(20) NOT NULL,
+    address1 VARCHAR(100) NOT NULL,
+    address2 VARCHAR(100) NULL,
+);
 
-CREATE TABLE Request_Type (
+CREATE TABLE Request_Types (
     type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(50) UNIQUE NOT NULL
 );
 
-INSERT INTO Request_Type (type_name) VALUES
+INSERT INTO Request_Types (type_name) VALUES
     ('A/V Automation'), 
     ('Electrical'), 
     ('Lighting Control'), 
     ('Network/Wi-Fi'), 
     ('Security'), 
     ('Other');
+
+CREATE TABLE Request_Support_Types (
+  request_id BIGINT NOT NULL,
+  type_id INTEGER NOT NULL,
+  PRIMARY KEY (request_id, type_id),
+  FOREIGN KEY (request_id) REFERENCES Requests(request_id) ON DELETE CASCADE,
+  FOREIGN KEY (type_id) REFERENCES Request_Types(type_id) ON DELETE RESTRICT
+);
 
 CREATE TABLE Request_Status (
     status_id SERIAL PRIMARY KEY,
@@ -73,43 +82,27 @@ INSERT INTO Request_Status (status_name, description) VALUES
 CREATE TABLE Requests (
     request_id SERIAL PRIMARY KEY,
     customer_id INT REFERENCES Customers(customer_id) NULL,
-    employee_id INT REFERENCES Employees(employee_id) NULL,
+    user_id INT REFERENCES Users(user_id) NULL,
     description TEXT NOT NULL,
     status_id INT REFERENCES Request_Status(status_id) DEFAULT 1,
-    type INT REFERENCES Request_Type(type_id) DEFAULT NULL,
     location INT REFERENCES Locations(location_id), 
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT chk_ticket_creator CHECK (
-        (customer_id IS NOT NULL AND employee_id IS NULL) OR
-        (customer_id IS NULL AND employee_id IS NOT NULL)
+        (customer_id IS NOT NULL AND user_id IS NULL) OR
+        (customer_id IS NULL AND user_id IS NOT NULL)
     )
 );
 
-CREATE TABLE Request_Comments (
+CREATE TABLE Comments (
     comment_id SERIAL PRIMARY KEY,
     request_id INT REFERENCES Requests(request_id),
-    employee_id INT REFERENCES Employees(employee_id),
-    comment_text TEXT NOT NULL,
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+    user_id INT REFERENCES Users(user_id),
+    comment_text TEXT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 -- Enable RLS (row-level security) and policies will be defined as per user roles and access requirements
-ALTER TABLE Customers ENABLE ROW LEVEL SECURITY;
-ALTER TABLE Requests ENABLE ROW LEVEL SECURITY;
-ALTER TABLE Request_Comments ENABLE ROW LEVEL SECURITY;
-
-CREATE POLICY select_customers ON Customers FOR SELECT
-USING (UserID = current_user_id());
-
-CREATE POLICY select_tickets ON Tickets FOR SELECT
-USING (CustomerID = current_customer_id());
-
-CREATE POLICY select_all_tickets ON Tickets FOR SELECT
-USING (TRUE);
-
-CREATE POLICY select_employee ON Employee FOR SELECT
-USING (UserID = current_user_id());
-
-CREATE POLICY select_all_comments ON TicketComments FOR SELECT
-USING (TRUE);
+alter table users enable row level security;
+create policy "Can view own user data." on users for select using (auth.uid() = id);
+create policy "Can update own user data." on users for update using (auth.uid() = id);
