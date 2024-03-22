@@ -16,7 +16,7 @@ CREATE TABLE Users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     auth_id UUID REFERENCES auth.users(id) UNIQUE NOT NULL,
     first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE Locations (
@@ -42,7 +42,7 @@ CREATE TABLE Customers (
     state VARCHAR(2) NOT NULL,
     zipcode VARCHAR(20) NOT NULL,
     address1 VARCHAR(100) NOT NULL,
-    address2 VARCHAR(100) NULL,
+    address2 VARCHAR(100) NULL
 );
 
 CREATE TABLE Request_Types (
@@ -97,7 +97,7 @@ CREATE TABLE Requests (
 CREATE TABLE Comments (
     comment_id SERIAL PRIMARY KEY,
     request_id INT REFERENCES Requests(request_id),
-    user_id INT REFERENCES Users(user_id),
+    user_id INT REFERENCES Users(user_id) DEFAULT 1,
     comment_text TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -127,3 +127,61 @@ FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 CREATE TRIGGER comments_before_update
 BEFORE UPDATE ON comments
 FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
+
+-- Define Ingest Functions
+CREATE OR REPLACE FUNCTION replicate_ingest_data()
+RETURNS TRIGGER AS $$
+DECLARE
+    new_customer_id INT;
+    new_request_id INT;
+    type_id INT;
+BEGIN
+    -- Check if the email already exists in the Customers table
+    SELECT id INTO new_customer_id FROM Customers WHERE email = NEW.client_email LIMIT 1;
+
+    IF NOT FOUND THEN
+        -- If not found, insert the client as a new customer and capture the customer_id
+            -- Splitting client_name into first_name and last_name for simplicity
+    INSERT INTO Customers (first_name, last_name, email, phone, location, created_at)
+    VALUES (
+        split_part(NEW.client_name, ' ', 1), -- Assuming first word as first name
+        split_part(NEW.client_name, ' ', 2), -- Assuming rest as last name
+        NEW.client_email,
+        NEW.client_phone,
+        NEW.created_at,
+        NEW.location,
+        CURRENT_TIMESTAMP
+    )
+        RETURNING id INTO new_customer_id;
+    END IF;
+
+    -- Insert the request
+    INSERT INTO Requests (customer_id, description, status_id, location)
+    VALUES (
+        new_customer_id, 
+        NEW.description, 
+        (SELECT status_id FROM Request_Status WHERE status_name = NEW.status_id LIMIT 1),
+        -- Assuming status_id and location_id are already mapped to their respective IDs in the Request_Status and Locations tables, respectively.
+        (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1)
+        -- Assuming location_name is already mapped to its corresponding ID in the Locations table.
+        )
+    RETURNING request_id INTO new_request_id;
+
+    -- Insert the request type (assuming request_type contains the type_name)
+    SELECT type_id INTO type_id FROM Request_Types WHERE type_name = NEW.request_type LIMIT 1;
+    IF FOUND THEN
+        INSERT INTO Request_Support_Types (request_id, type_id) VALUES (new_request_id, type_id);
+    END IF;
+
+    -- Insert comments if any (considering comments column in ingest_table corresponds to request comments)
+    IF NEW.comments IS NOT NULL THEN
+        INSERT INTO Comments (request_id, comment_text) VALUES (new_request_id, NEW.comments);
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER ingest_data_trigger
+AFTER INSERT ON ingest_table
+FOR EACH ROW EXECUTE PROCEDURE replicate_ingest_data();
