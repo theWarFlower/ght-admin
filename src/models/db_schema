@@ -1,3 +1,16 @@
+CREATE table ingest_table (
+  request_id SERIAL PRIMARY KEY,
+  client_name VARCHAR(100) NOT null,
+  client_email VARCHAR(100) NOT null,
+  client_phone VARCHAR(20),
+  description TEXT NOT NULL,
+  comments TEXT DEFAULT null,
+  location varchar(10) NOT NULL,
+  request_type varchar(250) NOT NULL,
+  status_id varchar(250) NOT NULL,
+  created_at TIMESTAMP NOT NULL
+);
+
 CREATE TABLE Roles (
     role_id SERIAL PRIMARY KEY,
     role_name VARCHAR(20) UNIQUE NOT NULL
@@ -6,7 +19,8 @@ CREATE TABLE Roles (
 INSERT INTO Roles (role_name) VALUES
     ('Client'), 
     ('Agent'),
-    ('Admin');
+    ('Admin'),
+    ('Technician');
 
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
@@ -30,13 +44,13 @@ INSERT INTO Locations (location_name) VALUES
     ('30A');
 
 CREATE TABLE Customers (
-    id SERIAL PRIMARY KEY,
+    customer_id SERIAL PRIMARY KEY,
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     email VARCHAR(100) UNIQUE NOT NULL,
     phone VARCHAR(20) NOT NULL,
-    created_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     location INT REFERENCES Locations(location_id),
     city VARCHAR(20) NOT NULL,
     state VARCHAR(2) NOT NULL,
@@ -46,7 +60,7 @@ CREATE TABLE Customers (
 );
 
 CREATE TABLE Request_Types (
-    type_id SERIAL PRIMARY KEY,
+    request_type_id SERIAL PRIMARY KEY,
     type_name VARCHAR(50) UNIQUE NOT NULL
 );
 
@@ -57,14 +71,6 @@ INSERT INTO Request_Types (type_name) VALUES
     ('Network/Wi-Fi'), 
     ('Security'), 
     ('Other');
-
-CREATE TABLE Request_Support_Types (
-  request_id BIGINT NOT NULL,
-  type_id INTEGER NOT NULL,
-  PRIMARY KEY (request_id, type_id),
-  FOREIGN KEY (request_id) REFERENCES Requests(request_id) ON DELETE CASCADE,
-  FOREIGN KEY (type_id) REFERENCES Request_Types(type_id) ON DELETE RESTRICT
-);
 
 CREATE TABLE Request_Status (
     status_id SERIAL PRIMARY KEY,
@@ -94,6 +100,14 @@ CREATE TABLE Requests (
     )
 );
 
+CREATE TABLE Request_Support_Types (
+  request_id INT NOT NULL,
+  request_type_id INT NOT NULL,
+  PRIMARY KEY (request_id, request_type_id),
+  FOREIGN KEY (request_id) REFERENCES Requests(request_id) ON DELETE CASCADE,
+  FOREIGN KEY (request_type_id) REFERENCES Request_Types(request_type_id) ON DELETE RESTRICT
+);
+
 CREATE TABLE Comments (
     comment_id SERIAL PRIMARY KEY,
     request_id INT REFERENCES Requests(request_id),
@@ -104,8 +118,8 @@ CREATE TABLE Comments (
 
 -- Enable RLS (row-level security) and policies will be defined as per user roles and access requirements
 alter table users enable row level security;
-create policy "Can view own user data." on users for select using (auth.uid() = id);
-create policy "Can update own user data." on users for update using (auth.uid() = id);
+create policy "Can view own user data." on users for select using (auth.uid() = Users.auth_id);
+create policy "Can update own user data." on users for update using (auth.uid() = Users.auth_id);
 
 -- Define Triggers to update updated_at column
 CREATE FUNCTION update_updated_at_column()
@@ -134,43 +148,47 @@ RETURNS TRIGGER AS $$
 DECLARE
     new_customer_id INT;
     new_request_id INT;
-    type_id INT;
+    new_request_type_id INT;
 BEGIN
     -- Check if the email already exists in the Customers table
-    SELECT id INTO new_customer_id FROM Customers WHERE email = NEW.client_email LIMIT 1;
+    SELECT customer_id INTO new_customer_id FROM Customers WHERE email = NEW.client_email LIMIT 1;
 
     IF NOT FOUND THEN
         -- If not found, insert the client as a new customer and capture the customer_id
             -- Splitting client_name into first_name and last_name for simplicity
-    INSERT INTO Customers (first_name, last_name, email, phone, location, created_at)
-    VALUES (
+
+    INSERT INTO Customers (first_name, last_name, email, phone, location, city, state, zipcode, address1, address2, created_at) VALUES (
         split_part(NEW.client_name, ' ', 1), -- Assuming first word as first name
         split_part(NEW.client_name, ' ', 2), -- Assuming rest as last name
         NEW.client_email,
         NEW.client_phone,
-        NEW.created_at,
-        NEW.location,
-        CURRENT_TIMESTAMP
+        (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1),
+        '',
+        '',
+        '',
+        '',
+        '',
+        NEW.created_at
     )
-        RETURNING id INTO new_customer_id;
+    RETURNING customer_id INTO new_customer_id;
     END IF;
 
     -- Insert the request
-    INSERT INTO Requests (customer_id, description, status_id, location)
-    VALUES (
-        new_customer_id, 
-        NEW.description, 
+    INSERT INTO Requests (customer_id, description, status_id, location) VALUES (
+        new_customer_id,
+        NEW.description,
         (SELECT status_id FROM Request_Status WHERE status_name = NEW.status_id LIMIT 1),
         -- Assuming status_id and location_id are already mapped to their respective IDs in the Request_Status and Locations tables, respectively.
         (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1)
+    )
         -- Assuming location_name is already mapped to its corresponding ID in the Locations table.
-        )
     RETURNING request_id INTO new_request_id;
 
     -- Insert the request type (assuming request_type contains the type_name)
-    SELECT type_id INTO type_id FROM Request_Types WHERE type_name = NEW.request_type LIMIT 1;
+
+    SELECT request_type_id INTO new_request_type_id FROM Request_Types WHERE type_name = NEW.request_type LIMIT 1;
     IF FOUND THEN
-        INSERT INTO Request_Support_Types (request_id, type_id) VALUES (new_request_id, type_id);
+        INSERT INTO Request_Support_Types (request_id, request_type_id) VALUES (new_request_id, new_request_type_id);
     END IF;
 
     -- Insert comments if any (considering comments column in ingest_table corresponds to request comments)
