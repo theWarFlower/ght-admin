@@ -29,7 +29,7 @@ export const App = () => (
           />  
         </CustomRoutes>
       <Resource
-        name="ingest_table"
+        name="requests"
         options={{ label: 'Support Requests' }}
         {...requests}
         />

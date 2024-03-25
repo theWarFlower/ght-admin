@@ -5,12 +5,15 @@ import {
     RadioButtonGroupInput,
     TextField,
     EmailField,
+    FunctionField,
+    ReferenceField,
 } from 'react-admin';
 
 import { useMediaQuery, Theme } from "@mui/material";
 import { DescriptionField } from "../components/DescriptionField";
 import { StatusField } from '../components/StatusField';
 import { DateField } from 'react-admin';
+import { Customer } from '../types';
 
 export const requestFilters = [
     <RadioButtonGroupInput source="status" label="Status" alwaysOn choices={[
@@ -40,7 +43,7 @@ export const ListRequests = () => {
         >
             {isSmall ? (
                 <SimpleList
-                    primaryText={(record) => record.name}
+                    primaryText={(record) => `${record.first_name} ${record.last_name}`}
                     secondaryText={(record) => record.email}
                     tertiaryText={(record) => record.description}
                 />      
@@ -75,9 +78,15 @@ export const ListRequests = () => {
                         maxWidth: 100
                     }
                 }}>
-                    <TextField source="name" label="Name" />
-                    <EmailField source="email" />
-                    <TextField source="mobile" label="Phone" />
+                    <ReferenceField
+                        source="customer_id"
+                        reference="customers"
+                        label="Name"
+                    />
+                    <ReferenceField source="customer_id" reference="customers">
+                        <TextField source="email" />
+                    </ReferenceField>
+                    <TextField source="phone" />
                     <DescriptionField />
                     <TextField source="location" />
                     <TextField source="support_type" />

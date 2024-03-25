@@ -1,14 +1,15 @@
 CREATE table ingest_table (
   request_id SERIAL PRIMARY KEY,
-  client_name VARCHAR(100) NOT null,
-  client_email VARCHAR(100) NOT null,
-  client_phone VARCHAR(20),
+  name VARCHAR(100) NOT null,
+  email VARCHAR(100) NOT null,
+  mobile VARCHAR(20),
   description TEXT NOT NULL,
-  comments TEXT DEFAULT null,
+  remarks TEXT DEFAULT null,
   location varchar(10) NOT NULL,
-  request_type varchar(250) NOT NULL,
-  status_id varchar(250) NOT NULL,
-  created_at TIMESTAMP NOT NULL
+  support_type varchar(250) NOT NULL,
+  status varchar(250) NOT NULL,
+  created_at TIMESTAMP NOT NULL,
+  updated_at TIMESTAMP NOT NULL
 );
 
 CREATE TABLE Roles (
@@ -20,7 +21,8 @@ INSERT INTO Roles (role_name) VALUES
     ('Client'), 
     ('Agent'),
     ('Admin'),
-    ('Technician');
+    ('Technician'),
+    ('Sales');
 
 CREATE TABLE Users (
     user_id SERIAL PRIMARY KEY,
@@ -51,7 +53,6 @@ CREATE TABLE Customers (
     phone VARCHAR(20) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    location INT REFERENCES Locations(location_id),
     city VARCHAR(20) NOT NULL,
     state VARCHAR(2) NOT NULL,
     zipcode VARCHAR(20) NOT NULL,
@@ -116,11 +117,6 @@ CREATE TABLE Comments (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Enable RLS (row-level security) and policies will be defined as per user roles and access requirements
-alter table users enable row level security;
-create policy "Can view own user data." on users for select using (auth.uid() = Users.auth_id);
-create policy "Can update own user data." on users for update using (auth.uid() = Users.auth_id);
-
 -- Define Triggers to update updated_at column
 CREATE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
@@ -142,7 +138,7 @@ CREATE TRIGGER comments_before_update
 BEFORE UPDATE ON comments
 FOR EACH ROW EXECUTE PROCEDURE update_updated_at_column();
 
--- Define Ingest Functions
+-- Define Ingest Function
 CREATE OR REPLACE FUNCTION replicate_ingest_data()
 RETURNS TRIGGER AS $$
 DECLARE
@@ -151,18 +147,16 @@ DECLARE
     new_request_type_id INT;
 BEGIN
     -- Check if the email already exists in the Customers table
-    SELECT customer_id INTO new_customer_id FROM Customers WHERE email = NEW.client_email LIMIT 1;
-
+    SELECT customer_id INTO new_customer_id FROM Customers WHERE email = NEW.email LIMIT 1;
     IF NOT FOUND THEN
         -- If not found, insert the client as a new customer and capture the customer_id
-            -- Splitting client_name into first_name and last_name for simplicity
 
-    INSERT INTO Customers (first_name, last_name, email, phone, location, city, state, zipcode, address1, address2, created_at) VALUES (
-        split_part(NEW.client_name, ' ', 1), -- Assuming first word as first name
-        split_part(NEW.client_name, ' ', 2), -- Assuming rest as last name
-        NEW.client_email,
-        NEW.client_phone,
-        (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1),
+    INSERT INTO Customers (first_name, last_name, email, phone, city, state, zipcode, address1, address2, created_at) VALUES (
+        -- Splitting name into first_name and last_name for simplicity
+        split_part(NEW.name, ' ', 1), -- Assuming first word as first name
+        split_part(NEW.name, ' ', 2), -- Assuming rest as last name
+        NEW.email,
+        NEW.mobile,
         '',
         '',
         '',
@@ -172,34 +166,63 @@ BEGIN
     )
     RETURNING customer_id INTO new_customer_id;
     END IF;
-
-    -- Insert the request
+    
+    --Insert the request
     INSERT INTO Requests (customer_id, description, status_id, location) VALUES (
         new_customer_id,
         NEW.description,
-        (SELECT status_id FROM Request_Status WHERE status_name = NEW.status_id LIMIT 1),
-        -- Assuming status_id and location_id are already mapped to their respective IDs in the Request_Status and Locations tables, respectively.
+        -- Assuming status_id and location_id are already mapped to their respective IDs 
+        -- in the Request_Status and Locations tables, respectively.
+        (SELECT status_id FROM Request_Status WHERE status_name = NEW.status LIMIT 1),
         (SELECT location_id FROM Locations WHERE location_name = NEW.location LIMIT 1)
     )
-        -- Assuming location_name is already mapped to its corresponding ID in the Locations table.
     RETURNING request_id INTO new_request_id;
 
-    -- Insert the request type (assuming request_type contains the type_name)
+    /* DOES THIS WORK FOR MULTIPLE REQUEST TYPES? */
+    -- Check if the request type already exists in the Request_Types table
+    -- Parse NEW.support_type for multiple comma seperated values and insert into Request_Support_Types table
 
-    SELECT request_type_id INTO new_request_type_id FROM Request_Types WHERE type_name = NEW.request_type LIMIT 1;
+    -- Splitting support_type into multiple values
+    WITH support_types AS (
+        SELECT unnest(string_to_array(NEW.support_type, ',')) AS support_type
+    )
+    -- Insert the support types into the Request_Support_Types table
+    SELECT request_type_id INTO new_request_type_id FROM Request_Types WHERE type_name = NEW.support_type LIMIT 1;
     IF FOUND THEN
         INSERT INTO Request_Support_Types (request_id, request_type_id) VALUES (new_request_id, new_request_type_id);
     END IF;
 
-    -- Insert comments if any (considering comments column in ingest_table corresponds to request comments)
-    IF NEW.comments IS NOT NULL THEN
-        INSERT INTO Comments (request_id, comment_text) VALUES (new_request_id, NEW.comments);
+    -- Insert comments if any (considering remarks column in ingest_table corresponds to request comments)
+    IF NEW.remarks IS NOT NULL THEN
+        INSERT INTO Comments (request_id, comment_text) VALUES (new_request_id, NEW.remarks);
     END IF;
 
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
+-- Ingest Table Trigger
 CREATE TRIGGER ingest_data_trigger
 AFTER INSERT ON ingest_table
 FOR EACH ROW EXECUTE PROCEDURE replicate_ingest_data();
+
+/*-- Enable RLS (row-level security) and policies will be defined as per user roles and access requirements
+ALTER TABLE Requests ENABLE ROW LEVEL SECURITY;
+ALTER TABLE Users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE Comments ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Can view own user data." ON users FOR SELECT USING (auth.uid() = Users.auth_id);
+CREATE POLICY "Can update own user data." ON users FOR SELECT USING (auth.uid() = Users.auth_id);
+CREATE POLICY "Can view all user data." ON users FOR SELECT USING (true);
+CREATE POLICY "Can view all data." ON requests, users, comments FOR SELECT USING (Users.role_id = 4);
+CREATE POLICY "Can create data." ON requests, users, comments FOR INSERT WITH CHECK (Users.role_id = 4);
+CREATE POLICY "Can update data." ON requests, users, comments FOR UPDATE USING (Users.role_id = 4);
+CREATE POLICY "Can delete data." ON requests, users, comments FOR DELETE USING (Users.role_id = 4);
+CREATE POLICY "Can view all data." ON request_support_types FOR SELECT USING (true);
+CREATE POLICY "Can create data." ON request_support_types FOR INSERT WITH CHECK (true);
+CREATE POLICY "Can update data." ON request_support_types FOR UPDATE USING (true);
+CREATE POLICY "Can delete data." ON request_support_types FOR DELETE USING (true);
+CREATE POLICY "Can view all data." ON request_status FOR SELECT USING (true);
+*/
+
+
